@@ -22,34 +22,105 @@ public class NotificationHelper {
 
     @Transactional
     public void notifyTaskEvent(Task task, Long actorId, NotificationType type) {
+        if (task == null) return;
 
-        if(task == null) {
-            return;
-        }
+        Long createdById = task.getCreatedBy() != null ? task.getCreatedBy().getId() : null;
+        Long assigneeId  = task.getAssignee() != null ? task.getAssignee().getId() : null;
 
         User actor = (actorId != null) ? userRepository.findById(actorId).orElse(null) : null;
 
         Set<Long> recipientIds = new LinkedHashSet<>();
 
-        if(task.getCreatedBy() != null) recipientIds.add(task.getCreatedBy().getId());
-        if(task.getAssignee() != null) recipientIds.add(task.getAssignee().getId());
-        if(actorId != null) recipientIds.remove(actorId);
-        if(recipientIds.isEmpty()) return;
+        // ✅ Rule recipients
+        switch (type) {
+            case TASK_ASSIGNED -> {
+                // TASK_ASSIGNED chỉ hợp lý gửi cho assignee
+                if (assigneeId != null) recipientIds.add(assigneeId);
+            }
+            default -> {
+                // các event khác: creator + assignee (nếu có)
+                if (createdById != null) recipientIds.add(createdById);
+                if (assigneeId != null) recipientIds.add(assigneeId);
+            }
+        }
 
-        String title = buildTitle(type);
+        // ✅ Không tự notify (trừ trường hợp tạo task không assignee)
+        boolean allowSelf = (type == NotificationType.TASK_CREATED && assigneeId == null);
+
+        if (!allowSelf && actorId != null) {
+            recipientIds.remove(actorId);
+            // nếu remove xong mà rỗng -> giữ lại để UI không bị "không hoạt động"
+            if (recipientIds.isEmpty()) recipientIds.add(actorId);
+        }
+
+        if (recipientIds.isEmpty()) return;
+
+        String title = (task.getTitle() != null) ? task.getTitle() : buildTitle(type);
+
         String msg = buildMessage(type, actor, task);
 
-        for (Long rid: recipientIds) {
-            User recipent = userRepository.findById(rid).orElse(null);
-            if(recipent == null) continue;;
+        for (Long rid : recipientIds) {
+            User recipient = userRepository.findById(rid).orElse(null);
+            if (recipient == null) continue;
 
             Notification n = Notification.builder()
-                    .recipient(recipent)
+                    .recipient(recipient)
                     .type(type)
                     .title(title)
                     .message(msg)
                     .entityType("TASK")
                     .entityId(task.getId())
+                    .actor(actor)
+                    .build();
+
+            notificationRepository.save(n);
+        }
+    }
+
+    @Transactional
+    public void notifySubtaskEvent(Task task, Long subtaskId, String subtaskTitle, Long actorId, NotificationType type) {
+        if (task == null) return;
+
+        Long createdById = task.getCreatedBy() != null ? task.getCreatedBy().getId() : null;
+        Long assigneeId  = task.getAssignee() != null ? task.getAssignee().getId() : null;
+
+        User actor = (actorId != null) ? userRepository.findById(actorId).orElse(null) : null;
+
+        Set<Long> recipientIds = new LinkedHashSet<>();
+        if (createdById != null) recipientIds.add(createdById);
+        if (assigneeId != null) recipientIds.add(assigneeId);
+
+        if (actorId != null) {
+            recipientIds.remove(actorId);
+            if (recipientIds.isEmpty()) recipientIds.add(actorId);
+        }
+
+        if (recipientIds.isEmpty()) return;
+
+        String title = (subtaskTitle != null && !subtaskTitle.isBlank())
+                ? subtaskTitle.trim()
+                : buildTitle(type);
+
+        String msg = (actor != null ? actor.getEmail() : "Someone")
+                + " " + switch (type) {
+            case SUBTASK_CREATED -> "created a subtask";
+            case SUBTASK_UPDATED -> "updated a subtask";
+            case SUBTASK_DELETED -> "deleted a subtask";
+            default -> "did something to a subtask";
+        }
+                + " in task #" + task.getId() + ": \"" + task.getTitle() + "\"";
+
+        for (Long rid : recipientIds) {
+            User recipient = userRepository.findById(rid).orElse(null);
+            if (recipient == null) continue;
+
+            Notification n = Notification.builder()
+                    .recipient(recipient)
+                    .type(type)
+                    .title(title)
+                    .message(msg)
+                    .entityType("SUBTASK")
+                    .entityId(subtaskId)
                     .actor(actor)
                     .build();
 

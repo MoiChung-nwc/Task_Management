@@ -2,6 +2,8 @@ package com.chung.taskcrud.task.subtask.service.impl;
 
 import com.chung.taskcrud.common.exception.AppException;
 import com.chung.taskcrud.common.exception.ErrorCode;
+import com.chung.taskcrud.notification.entity.NotificationType;
+import com.chung.taskcrud.notification.helper.NotificationHelper;
 import com.chung.taskcrud.task.entity.Task;
 import com.chung.taskcrud.task.repository.TaskRepository;
 import com.chung.taskcrud.task.security.TaskAuthorizationService;
@@ -29,6 +31,7 @@ public class SubtaskServiceImpl implements SubtaskService {
     private final SubtaskRepository subtaskRepository;
 
     private final TaskAuthorizationService authorizationService;
+    private final NotificationHelper notificationHelper;
     private final SubtaskMapper mapper;
 
     @Override
@@ -43,6 +46,15 @@ public class SubtaskServiceImpl implements SubtaskService {
                 .build();
 
         subtaskRepository.save(subtask);
+
+        notificationHelper.notifySubtaskEvent(
+                task,
+                subtask.getId(),
+                subtask.getTitle(),
+                actorId,
+                NotificationType.SUBTASK_CREATED
+        );
+
         return mapper.toResponse(subtask);
     }
 
@@ -58,6 +70,15 @@ public class SubtaskServiceImpl implements SubtaskService {
         if (request.getStatus() != null) subtask.setStatus(request.getStatus());
 
         subtaskRepository.save(subtask);
+
+        notificationHelper.notifySubtaskEvent(
+                task,
+                subtask.getId(),
+                subtask.getTitle(),
+                actorId,
+                NotificationType.SUBTASK_UPDATED
+        );
+
         return mapper.toResponse(subtask);
     }
 
@@ -72,6 +93,14 @@ public class SubtaskServiceImpl implements SubtaskService {
         if (!subtask.isDeleted()) {
             subtask.setDeletedAt(Instant.now());
             subtaskRepository.save(subtask);
+
+            notificationHelper.notifySubtaskEvent(
+                    task,
+                    subtask.getId(),
+                    subtask.getTitle(),
+                    actorId,
+                    NotificationType.SUBTASK_DELETED
+            );
         }
     }
 

@@ -14,6 +14,7 @@ import java.util.List;
 public class TaskLogResponse {
     private Long id;
     private Long taskId;
+    private String taskTitle;
     private TaskLogEventType eventType;
     private Long actorId;
     private String actorEmail;

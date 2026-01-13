@@ -12,4 +12,7 @@ public interface TaskLogService {
     );
 
     TaskLogResponse detail(Authentication auth, Long actorId, Long taskId, Long logId);
+
+    PageResponse<TaskLogResponse> myHistory(Authentication auth, Long actorId, Pageable pageable);
+
 }

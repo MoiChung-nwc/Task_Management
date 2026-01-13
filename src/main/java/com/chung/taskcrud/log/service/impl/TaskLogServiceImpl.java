@@ -67,6 +67,25 @@ public class TaskLogServiceImpl implements TaskLogService {
         return mapper.toResponse(log);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<TaskLogResponse> myHistory(Authentication auth, Long actorId, Pageable pageable) {
+        Page<TaskLog> p = taskLogRepository.findVisibleLogsForUser(actorId, pageable);
+
+        List<TaskLogResponse> items = p.getContent()
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+
+        return PageResponse.<TaskLogResponse>builder()
+                .items(items)
+                .page(p.getNumber())
+                .size(p.getSize())
+                .totalElements(p.getTotalElements())
+                .totalPages(p.getTotalPages())
+                .build();
+    }
+
     private Task getTaskIncludingDeletedOrThrow(Long id) {
         return taskRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));

@@ -25,6 +25,7 @@ public class TaskLogMapper {
         return TaskLogResponse.builder()
                 .id(log.getId())
                 .taskId(log.getTask().getId())
+                .taskTitle(log.getTask().getTitle())
                 .eventType(log.getEventType())
                 .actorId(actorId)
                 .actorEmail(actorEmail)
@@ -32,4 +33,5 @@ public class TaskLogMapper {
                 .changes(changes)
                 .build();
     }
+
 }

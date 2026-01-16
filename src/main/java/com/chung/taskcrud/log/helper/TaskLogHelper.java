@@ -22,9 +22,7 @@ public class TaskLogHelper {
 
     @Transactional
     public void logSimple(Task task, Long actorId, TaskLogEventType eventType) {
-        if (task == null) {
-            return;
-        }
+        if (task == null) return;
 
         User actor = (actorId != null) ? userRepository.findById(actorId).orElse(null) : null;
 
@@ -39,7 +37,18 @@ public class TaskLogHelper {
 
     @Transactional
     public void logWithChanges(Task task, Long actorId, TaskLogEventType eventType, TaskLogChange... changes) {
-        if(task == null) {
+        if (task == null) return;
+
+        // đếm change thực sự
+        int changedCount = 0;
+        if (changes != null) {
+            for (TaskLogChange c : changes) {
+                if (c != null) changedCount++;
+            }
+        }
+
+        // nếu không có thay đổi thì KHÔNG tạo log (tránh TASK_UPDATED changes: [])
+        if (changedCount == 0) {
             return;
         }
 
@@ -51,11 +60,9 @@ public class TaskLogHelper {
                 .eventType(eventType)
                 .build();
 
-        if(changes != null) {
-            for (TaskLogChange c : changes) {
-                if (c == null) continue;
-                log.addChange(c);
-            }
+        for (TaskLogChange c : changes) {
+            if (c == null) continue;
+            log.addChange(c);
         }
 
         taskLogRepository.save(log);
@@ -65,7 +72,7 @@ public class TaskLogHelper {
         String o = (oldVal == null) ? null : oldVal.toString();
         String n = (newVal == null) ? null : newVal.toString();
 
-        if(Objects.equals(o, n)) return null;
+        if (Objects.equals(o, n)) return null;
 
         return TaskLogChange.builder()
                 .fieldName(field)

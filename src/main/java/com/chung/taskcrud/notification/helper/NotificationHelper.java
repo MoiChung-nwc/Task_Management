@@ -31,25 +31,20 @@ public class NotificationHelper {
 
         Set<Long> recipientIds = new LinkedHashSet<>();
 
-        // ✅ Rule recipients
         switch (type) {
             case TASK_ASSIGNED -> {
-                // TASK_ASSIGNED chỉ hợp lý gửi cho assignee
                 if (assigneeId != null) recipientIds.add(assigneeId);
             }
             default -> {
-                // các event khác: creator + assignee (nếu có)
                 if (createdById != null) recipientIds.add(createdById);
                 if (assigneeId != null) recipientIds.add(assigneeId);
             }
         }
 
-        // ✅ Không tự notify (trừ trường hợp tạo task không assignee)
         boolean allowSelf = (type == NotificationType.TASK_CREATED && assigneeId == null);
 
         if (!allowSelf && actorId != null) {
             recipientIds.remove(actorId);
-            // nếu remove xong mà rỗng -> giữ lại để UI không bị "không hoạt động"
             if (recipientIds.isEmpty()) recipientIds.add(actorId);
         }
 

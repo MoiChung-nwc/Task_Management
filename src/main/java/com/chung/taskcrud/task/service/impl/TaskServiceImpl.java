@@ -103,6 +103,7 @@ public class TaskServiceImpl implements TaskService {
         Long oldAssigneeId = (task.getAssignee() != null) ? task.getAssignee().getId() : null;
         String oldTags = tagsToString(task);
 
+        // apply changes
         if (request.getTitle() != null) task.setTitle(request.getTitle().trim());
         if (request.getDescription() != null) task.setDescription(request.getDescription());
         if (request.getStatus() != null) task.setStatus(request.getStatus());
@@ -117,26 +118,35 @@ public class TaskServiceImpl implements TaskService {
             task.setTags(tagHelper.resolveTags(request.getTags()));
         }
 
+        Long newAssigneeId = (task.getAssignee() != null) ? task.getAssignee().getId() : null;
+        String newTags = tagsToString(task);
+
+        // build changes BEFORE save/notify
+        var c1 = taskLogHelper.change("title", oldTitle, task.getTitle());
+        var c2 = taskLogHelper.change("description", oldDesc, task.getDescription());
+        var c3 = taskLogHelper.change("status", oldStatus, task.getStatus());
+        var c4 = taskLogHelper.change("priority", oldPriority, task.getPriority());
+        var c5 = taskLogHelper.change("dueDate", oldDueDate, task.getDueDate());
+        var c6 = taskLogHelper.change("assigneeId", oldAssigneeId, newAssigneeId);
+        var c7 = taskLogHelper.change("tags", oldTags, newTags);
+
+        // nếu không đổi gì → không save, không notify, không log
+        if (c1 == null && c2 == null && c3 == null && c4 == null && c5 == null && c6 == null && c7 == null) {
+            return taskMapper.toResponse(task);
+        }
+
         taskRepository.save(task);
 
         notificationHelper.notifyTaskEvent(task, actorId, NotificationType.TASK_UPDATED);
 
-        Long newAssigneeId = (task.getAssignee() != null) ? task.getAssignee().getId() : null;
-        String newTags = tagsToString(task);
-
         taskLogHelper.logWithChanges(
                 task, actorId, TaskLogEventType.TASK_UPDATED,
-                taskLogHelper.change("title", oldTitle, task.getTitle()),
-                taskLogHelper.change("description", oldDesc, task.getDescription()),
-                taskLogHelper.change("status", oldStatus, task.getStatus()),
-                taskLogHelper.change("priority", oldPriority, task.getPriority()),
-                taskLogHelper.change("dueDate", oldDueDate, task.getDueDate()),
-                taskLogHelper.change("assigneeId", oldAssigneeId, newAssigneeId),
-                taskLogHelper.change("tags", oldTags, newTags)
+                c1, c2, c3, c4, c5, c6, c7
         );
 
         return taskMapper.toResponse(task);
     }
+
 
     @Override
     public void softDelete(Authentication auth, Long actorId, Long taskId) {

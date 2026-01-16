@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 public class TaskAuthorizationService {
 
     private static final String SYSTEM_ADMIN = "SYSTEM_ADMIN";
-
     private static final String TASK_READ = "TASK_READ";
     private static final String TASK_UPDATE_OWN_OR_ASSIGNED = "TASK_UPDATE_OWN_OR_ASSIGNED";
     private static final String TASK_DELETE_OWN_OR_ASSIGNED = "TASK_DELETE_OWN_OR_ASSIGNED";
@@ -44,8 +43,6 @@ public class TaskAuthorizationService {
                     "You can only access/modify tasks you created or tasks assigned to you");
         }
     }
-
-    // ========== PUBLIC API (giữ method name bạn đang gọi) ==========
 
     public void assertCanView(Authentication auth, Long actorId, Task task) {
         require(auth, TASK_READ);

@@ -38,14 +38,12 @@ public class Notification {
     @Column(nullable = false, length = 2000)
     private String message;
 
-    // liên kết đến entity (để UI click)
     @Column(nullable = false, length = 30)
-    private String entityType; // "TASK" / "SUBTASK"
+    private String entityType;
 
     @Column(nullable = false)
-    private Long entityId; // taskId / subtaskId
+    private Long entityId;
 
-    // tác nhân gây event
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "actor_id")
     private User actor;

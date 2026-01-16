@@ -36,10 +36,8 @@ public class TaskLogServiceImpl implements TaskLogService {
         Task task = getTaskIncludingDeletedOrThrow(taskId);
         authorizationService.assertCanView(auth, actorId, task);
 
-        Page<?> page = taskLogRepository.findAllByTask_IdOrderByCreatedAtDesc(taskId, pageable);
-
-        @SuppressWarnings("unchecked")
-        Page<TaskLog> p = (Page<TaskLog>) page;
+        // ✅ bỏ cast Page<?> -> Page<TaskLog>
+        Page<TaskLog> p = taskLogRepository.findAllByTask_IdOrderByCreatedAtDesc(taskId, pageable);
 
         List<TaskLogResponse> items = p.getContent()
                 .stream()

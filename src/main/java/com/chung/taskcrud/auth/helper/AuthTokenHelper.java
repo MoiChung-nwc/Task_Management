@@ -30,6 +30,10 @@ public class AuthTokenHelper {
     @Value("${app.base-url:http://localhost:8080}")
     private String baseUrl;
 
+    // ✅ NEW: frontend url to build verify link for UI
+    @Value("${app.frontend-base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
+
     @Value("${application.security.jwt.refresh-token.expiration}")
     private long refreshExpSeconds;
 
@@ -60,8 +64,9 @@ public class AuthTokenHelper {
         emailVerificationTokenRepository.save(vt);
     }
 
+    // ✅ CHANGED: send link to frontend
     public void sendVerifyEmail(String email, String token) {
-        String link = baseUrl + "/api/auth/verify?token=" + token;
+        String link = frontendBaseUrl + "/verify-email?token=" + token;
         mailService.sendVerifyEmail(email, link);
     }
 
